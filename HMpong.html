@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Pong Game</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            margin: 0;
+            background-color: #000;
+            color: #fff;
+            font-family: Arial, sans-serif;
+        }
+        canvas {
+            border: 2px solid #fff;
+        }
+        .controls, .scoreboard {
+            margin-top: 20px;
+        }
+        .controls button {
+            margin: 0 10px;
+            padding: 10px 20px;
+            font-size: 16px;
+            cursor: pointer;
+        }
+        .scoreboard {
+            font-size: 24px;
+        }
+        .message {
+            font-size: 48px;
+            position: absolute;
+        }
+    </style>
+</head>
+<body>
+    <canvas id="pong" width="800" height="400"></canvas>
+    <div class="scoreboard">
+        Player 1: <span id="player1Score">0</span> | Player 2: <span id="player2Score">0</span>
+    </div>
+    <div class="controls">
+        <button id="startButton">Start</button>
+        <button id="pauseButton">Pause</button>
+        <button id="slowButton">Slow</button>
+        <button id="mediumButton">Medium</button>
+        <button id="fastButton">Fast</button>
+    </div>
+    <div id="message" class="message"></div>
+    <script>
+        const canvas = document.getElementById('pong');
+        const context = canvas.getContext('2d');
+        const messageEl = document.getElementById('message');
+
+        const paddleWidth = 10, paddleHeight = 100, initialPaddleSpeed = 6;
+        const player = { x: 0, y: canvas.height / 2 - paddleHeight / 2, width: paddleWidth, height: paddleHeight, dy: 0, score: 0 };
+        const computer = { x: canvas.width - paddleWidth, y: canvas.height / 2 - paddleHeight / 2, width: paddleWidth, height: paddleHeight, dy: 0, score: 0 };
+
+        const ballSize = 10;
+        const ball = { x: canvas.width / 2 - ballSize / 2, y: canvas.height / 2 - ballSize / 2, width: ballSize, height: ballSize, speed: 4, dx: 4, dy: 4 };
+
+        let paddleSpeed = initialPaddleSpeed;
+        let animationFrameId;
+        let isPaused = false;
+
+        function drawRect(x, y, width, height, color) {
+            context.fillStyle = color;
+            context.fillRect(x, y, width, height);
+        }
+
+        function drawBall(x, y, width, height, color) {
+            context.fillStyle = color;
+            context.fillRect(x, y, width, height);
+        }
+
+        function update() {
+            if (isPaused) return;
+
+            player.y += player.dy;
+            computer.y += (ball.y - (computer.y + computer.height / 2)) * 0.1;
+
+            if (player.y < 0) player.y = 0;
+            if (player.y + player.height > canvas.height) player.y = canvas.height - player.height;
+            if (computer.y < 0) computer.y = 0;
+            if (computer.y + computer.height > canvas.height) computer.y = canvas.height - computer.height;
+
+            ball.x += ball.dx;
+            ball.y += ball.dy;
+
+            if (ball.y < 0 || ball.y + ball.height > canvas.height) ball.dy *= -1;
+
+            let playerCollision = ball.x < player.x + player.width && ball.y < player.y + player.height && ball.y + ball.height > player.y;
+            let computerCollision = ball.x + ball.width > computer.x && ball.y < computer.y + computer.height && ball.y + ball.height > computer.y;
+
+            if (playerCollision) {
+                ball.dx *= -1;
+                ball.x = player.x + player.width;
+            }
+
+            if (computerCollision) {
+                ball.dx *= -1;
+                ball.x = computer.x - ball.width;
+            }
+
+            if (ball.x < 0) {
+                computer.score += 1;
+                resetBall();
+                updateScoreboard();
+            }
+
+            if (ball.x + ball.width > canvas.width) {
+                player.score += 1;
+                resetBall();
+                updateScoreboard();
+            }
+        }
+
+        function draw() {
+            drawRect(0, 0, canvas.width, canvas.height, '#000');
+            drawRect(player.x, player.y, player.width, player.height, '#fff');
+            drawRect(computer.x, computer.y, computer.width, computer.height, '#fff');
+            drawBall(ball.x, ball.y, ball.width, ball.height, '#fff');
+        }
+
+        function loop() {
+            update();
+            draw();
+            animationFrameId = requestAnimationFrame(loop);
+        }
+
+        function resetBall() {
+            ball.x = canvas.width / 2 - ballSize / 2;
+            ball.y = canvas.height / 2 - ballSize / 2;
+            ball.dx *= -1;
+            pauseGame();
+        }
+
+        function updateScoreboard() {
+            document.getElementById('player1Score').textContent = player.score;
+            document.getElementById('player2Score').textContent = computer.score;
+        }
+
+        function pauseGame() {
+            isPaused = true;
+            cancelAnimationFrame(animationFrameId);
+            animationFrameId = null;
+            messageEl.textContent = "BE READY";
+            setTimeout(() => {
+                messageEl.textContent = "";
+                isPaused = false;
+                loop();
+            }, 3000);
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowUp') player.dy = -paddleSpeed;
+            if (e.key === 'ArrowDown') player.dy = paddleSpeed;
+        });
+
+        document.addEventListener('keyup', (e) => {
+            if (e.key === 'ArrowUp' || e.key === 'ArrowDown') player.dy = 0;
+        });
+
+        document.getElementById('startButton').addEventListener('click', () => {
+            if (!animationFrameId) {
+                isPaused = false;
+                loop();
+            }
+        });
+
+        document.getElementById('pauseButton').addEventListener('click', () => {
+            isPaused = true;
+            cancelAnimationFrame(animationFrameId);
+            animationFrameId = null;
+        });
+
+        document.getElementById('slowButton').addEventListener('click', () => {
+            ball.speed = 2;
+            ball.dx = ball.dx > 0 ? 2 : -2;
+            ball.dy = ball.dy > 0 ? 2 : -2;
+            paddleSpeed = 4;
+        });
+
+        document.getElementById('mediumButton').addEventListener('click', () => {
+            ball.speed = 4;
+            ball.dx = ball.dx > 0 ? 4 : -4;
+            ball.dy = ball.dy > 0 ? 4 : -4;
+            paddleSpeed = 6;
+        });
+
+        document.getElementById('fastButton').addEventListener('click', () => {
+            ball.speed = 6;
+            ball.dx = ball.dx > 0 ? 6 : -6;
+            ball.dy = ball.dy > 0 ? 6 : -6;
+            paddleSpeed = 8;
+        });
+
+        // Initialize with medium speed
+        document.getElementById('mediumButton').click();
+    </script>
+</body>
+</html>
