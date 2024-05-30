@@ -65,6 +65,7 @@
         let paddleSpeed = initialPaddleSpeed;
         let animationFrameId;
         let isPaused = false;
+        const winningScore = 3;
 
         function drawRect(x, y, width, height, color) {
             context.fillStyle = color;
@@ -107,14 +108,16 @@
 
             if (ball.x < 0) {
                 computer.score += 1;
-                resetBall();
                 updateScoreboard();
+                if (checkWin()) return;
+                resetBall();
             }
 
             if (ball.x + ball.width > canvas.width) {
                 player.score += 1;
-                resetBall();
                 updateScoreboard();
+                if (checkWin()) return;
+                resetBall();
             }
         }
 
@@ -135,7 +138,7 @@
             ball.x = canvas.width / 2 - ballSize / 2;
             ball.y = canvas.height / 2 - ballSize / 2;
             ball.dx *= -1;
-            pauseGame();
+            pauseGame("PLAY ON");
         }
 
         function updateScoreboard() {
@@ -143,63 +146,22 @@
             document.getElementById('player2Score').textContent = computer.score;
         }
 
-        function pauseGame() {
+        function pauseGame(message) {
             isPaused = true;
             cancelAnimationFrame(animationFrameId);
             animationFrameId = null;
-            messageEl.textContent = "BE READY";
+            messageEl.textContent = message;
             setTimeout(() => {
                 messageEl.textContent = "";
-                isPaused = false;
-                loop();
+                if (!checkWin()) {
+                    isPaused = false;
+                    loop();
+                }
             }, 3000);
         }
 
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'ArrowUp') player.dy = -paddleSpeed;
-            if (e.key === 'ArrowDown') player.dy = paddleSpeed;
-        });
-
-        document.addEventListener('keyup', (e) => {
-            if (e.key === 'ArrowUp' || e.key === 'ArrowDown') player.dy = 0;
-        });
-
-        document.getElementById('startButton').addEventListener('click', () => {
-            if (!animationFrameId) {
-                isPaused = false;
-                loop();
-            }
-        });
-
-        document.getElementById('pauseButton').addEventListener('click', () => {
-            isPaused = true;
-            cancelAnimationFrame(animationFrameId);
-            animationFrameId = null;
-        });
-
-        document.getElementById('slowButton').addEventListener('click', () => {
-            ball.speed = 2;
-            ball.dx = ball.dx > 0 ? 2 : -2;
-            ball.dy = ball.dy > 0 ? 2 : -2;
-            paddleSpeed = 4;
-        });
-
-        document.getElementById('mediumButton').addEventListener('click', () => {
-            ball.speed = 4;
-            ball.dx = ball.dx > 0 ? 4 : -4;
-            ball.dy = ball.dy > 0 ? 4 : -4;
-            paddleSpeed = 6;
-        });
-
-        document.getElementById('fastButton').addEventListener('click', () => {
-            ball.speed = 6;
-            ball.dx = ball.dx > 0 ? 6 : -6;
-            ball.dy = ball.dy > 0 ? 6 : -6;
-            paddleSpeed = 8;
-        });
-
-        // Initialize with medium speed
-        document.getElementById('mediumButton').click();
-    </script>
-</body>
-</html>
+        function checkWin() {
+            if (player.score >= winningScore || computer.score >= winningScore) {
+                messageEl.textContent = "Game Over";
+                return true;
+           
