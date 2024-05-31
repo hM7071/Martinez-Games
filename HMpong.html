@@ -35,6 +35,13 @@
             font-size: 48px;
             position: absolute;
         }
+        .developer {
+            position: absolute;
+            bottom: 10px;
+            right: 10px;
+            font-size: 16px;
+            color: #fff;
+        }
     </style>
 </head>
 <body>
@@ -45,11 +52,14 @@
     <div class="controls">
         <button id="startButton">Start</button>
         <button id="pauseButton">Pause</button>
+        <button id="newGameButton">New Game</button>
         <button id="slowButton">Slow</button>
         <button id="mediumButton">Medium</button>
         <button id="fastButton">Fast</button>
+        <button id="angelicaButton">Angelica</button>
     </div>
     <div id="message" class="message"></div>
+    <div class="developer">Martinez Games</div>
     <script>
         const canvas = document.getElementById('pong');
         const context = canvas.getContext('2d');
@@ -65,7 +75,8 @@
         let paddleSpeed = initialPaddleSpeed;
         let animationFrameId;
         let isPaused = false;
-        const winningScore = 3;
+        let isGameOver = false;
+        let playerColor = '#fff';
 
         function drawRect(x, y, width, height, color) {
             context.fillStyle = color;
@@ -78,7 +89,7 @@
         }
 
         function update() {
-            if (isPaused) return;
+            if (isPaused || isGameOver) return;
 
             player.y += player.dy;
             computer.y += (ball.y - (computer.y + computer.height / 2)) * 0.1;
@@ -108,22 +119,22 @@
 
             if (ball.x < 0) {
                 computer.score += 1;
-                updateScoreboard();
-                if (checkWin()) return;
                 resetBall();
+                updateScoreboard();
+                checkGameOver();
             }
 
             if (ball.x + ball.width > canvas.width) {
                 player.score += 1;
-                updateScoreboard();
-                if (checkWin()) return;
                 resetBall();
+                updateScoreboard();
+                checkGameOver();
             }
         }
 
         function draw() {
             drawRect(0, 0, canvas.width, canvas.height, '#000');
-            drawRect(player.x, player.y, player.width, player.height, '#fff');
+            drawRect(player.x, player.y, player.width, player.height, playerColor);
             drawRect(computer.x, computer.y, computer.width, computer.height, '#fff');
             drawBall(ball.x, ball.y, ball.width, ball.height, '#fff');
         }
@@ -138,7 +149,7 @@
             ball.x = canvas.width / 2 - ballSize / 2;
             ball.y = canvas.height / 2 - ballSize / 2;
             ball.dx *= -1;
-            pauseGame("PLAY ON");
+            pauseGame();
         }
 
         function updateScoreboard() {
@@ -146,22 +157,98 @@
             document.getElementById('player2Score').textContent = computer.score;
         }
 
-        function pauseGame(message) {
+        function pauseGame() {
             isPaused = true;
             cancelAnimationFrame(animationFrameId);
             animationFrameId = null;
-            messageEl.textContent = message;
-            setTimeout(() => {
-                messageEl.textContent = "";
-                if (!checkWin()) {
+            if (!isGameOver) {
+                messageEl.textContent = "PLAY ON";
+                setTimeout(() => {
+                    messageEl.textContent = "";
                     isPaused = false;
                     loop();
-                }
-            }, 3000);
+                }, 3000);
+            }
         }
 
-        function checkWin() {
-            if (player.score >= winningScore || computer.score >= winningScore) {
+        function checkGameOver() {
+            if (computer.score >= 3) {
+                isGameOver = true;
                 messageEl.textContent = "Game Over";
-                return true;
-           
+            }
+        }
+
+        function resetGame() {
+            player.score = 0;
+            computer.score = 0;
+            player.dy = 0;
+            computer.dy = 0;
+            isGameOver = false;
+            playerColor = '#fff';
+            updateScoreboard();
+            resetBall();
+            messageEl.textContent = "";
+            loop();
+        }
+
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'ArrowUp') player.dy = -paddleSpeed;
+            if (e.key === 'ArrowDown') player.dy = paddleSpeed;
+        });
+
+        document.addEventListener('keyup', (e) => {
+            if (e.key === 'ArrowUp' || e.key === 'ArrowDown') player.dy = 0;
+        });
+
+        document.getElementById('startButton').addEventListener('click', () => {
+            if (!animationFrameId && !isGameOver) {
+                isPaused = false;
+                loop();
+            }
+        });
+
+        document.getElementById('pauseButton').addEventListener('click', () => {
+            isPaused = true;
+            cancelAnimationFrame(animationFrameId);
+            animationFrameId = null;
+        });
+
+        document.getElementById('newGameButton').addEventListener('click', () => {
+            cancelAnimationFrame(animationFrameId);
+            resetGame();
+        });
+
+        document.getElementById('slowButton').addEventListener('click', () => {
+            ball.speed = 2;
+            ball.dx = ball.dx > 0 ? 2 : -2;
+            ball.dy = ball.dy > 0 ? 2 : -2;
+            paddleSpeed = 4;
+        });
+
+        document.getElementById('mediumButton').addEventListener('click', () => {
+            ball.speed = 4;
+            ball.dx = ball.dx > 0 ? 4 : -4;
+            ball.dy = ball.dy > 0 ? 4 : -4;
+            paddleSpeed = 6;
+        });
+
+        document.getElementById('fastButton').addEventListener('click', () => {
+            ball.speed = 6;
+            ball.dx = ball.dx > 0 ? 6 : -6;
+            ball.dy = ball.dy > 0 ? 6 : -6;
+            paddleSpeed = 8;
+        });
+
+        document.getElementById('angelicaButton').addEventListener('click', () => {
+            ball.speed = 6;
+            ball.dx = ball.dx > 0 ? 6 : -6;
+            ball.dy = ball.dy > 0 ? 6 : -6;
+            paddleSpeed = 8;
+            playerColor = 'pink';
+        });
+
+        // Initialize with medium speed
+        document.getElementById('mediumButton').click();
+    </script>
+</body>
+</html>
